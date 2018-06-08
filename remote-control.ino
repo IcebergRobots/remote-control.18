@@ -4,6 +4,10 @@
 #define DEBUG_SERIAL Serial
 #define RANGE 100
 
+#define BLUETOOTH_SERIAL Serial   // Serial des Bluetooth-Moduls
+#define START_MARKER 254          // Startzeichen einer Bluetooth-Nachricht
+#define END_MARKER 255            // Endzeichen einer Bluetooth-Nachricht
+
 double x = 0;
 double y = 0;
 double angle = 0;
@@ -79,47 +83,25 @@ void loop() {
     Der Betrag(power) des Vektors(v') wird gespeichert.
   */
   power = map(squarePower, 0, squarePowerMax, 0, RANGE);  // Vektorlänge skaliert in einen Kreis
-  debug(angle, 4);
-  debug(power, 4);
-  debugln();
+  /*debug(angle, 4);
+    debug(power, 4);
+    debugln();*/
+  byte data[4];
+  data[0] = 'h';
+  data[1] = angle >= 0;
+  data[2] = abs(angle);
+  data[3] = power;
+  broadcast(data, 4);
 }
 
 double vectorLength(long a, long b) {
   return sqrt(a * a + b * b);
 }
 
-/*****************************************************
-  sende Text RANGEum PC
-*****************************************************/
-void debug(String str) {
-  if (DEBUG) {
-    DEBUG_SERIAL.print(str + " ");
+void broadcast(byte * data, byte numberOfElements) {
+  BLUETOOTH_SERIAL.write(START_MARKER);
+  for (byte i = 0; i < numberOfElements; i++) {
+    BLUETOOTH_SERIAL.write(constrain(data[i], 0, 253));
   }
-}
-void debug(long num) {
-  debug(String(num));
-}
-void debug(long num, byte minLength) {
-  String str = String(num);
-  if (num >= 0) str = "+" + str;
-  while (str.length() < minLength) {
-    str = " " + str;
-  }
-  debug(str);
-}
-void debug() {
-  debug("");
-}
-
-/*****************************************************
-  sende Text RANGEum PC
-*****************************************************/
-void debugln(String str) {
-  debug(str + "\n");
-}
-void debugln(long num) {
-  debugln(String(num));
-}
-void debugln() {
-  debugln("");
+  BLUETOOTH_SERIAL.write(END_MARKER);
 }
